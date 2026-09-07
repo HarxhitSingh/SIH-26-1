@@ -76,7 +76,7 @@ export default function TopHeader({ onToggleMobile }) {
   };
 
   const pageTitle = getPageTitle(location.pathname);
-  const displayName = profile?.personalInfo?.fullName || userProfile?.name || currentUser?.displayName || 'Entrepreneur';
+  const displayName = userProfile?.name || currentUser?.displayName || profile?.personalInfo?.fullName || 'Entrepreneur';
 
   // Popular languages for quick header switcher
   const quickLanguages = [

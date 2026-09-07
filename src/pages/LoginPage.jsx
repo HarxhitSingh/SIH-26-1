@@ -25,8 +25,8 @@ export default function LoginPage() {
     }
   };
 
-  const handleDemoLogin = (completed = true) => {
-    const { profile } = loginAsDemoUser(completed);
+  const handleDemoLogin = async (completed = true) => {
+    const { profile } = await loginAsDemoUser(completed);
     handleSuccessfulAuth(profile);
   };
 

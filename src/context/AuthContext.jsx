@@ -36,6 +36,17 @@ const DEFAULT_DEMO_PROFILE = {
   isDemo: true
 };
 
+// Helper to clear demo and legacy cross-user keys
+export const clearDemoAndLegacyStorage = () => {
+  localStorage.removeItem(DEMO_USER_STORAGE_KEY);
+  localStorage.removeItem(DEMO_PROFILE_STORAGE_KEY);
+  localStorage.removeItem('udyamsathi_demo_profile_data');
+  // Legacy unscoped keys that caused cross-user contamination
+  localStorage.removeItem('udyamsaathi.businesses');
+  localStorage.removeItem('udyamsaathi.activeBusinessId');
+  localStorage.removeItem('udyamsaathi_onboarding_draft');
+};
+
 export function AuthProvider({ children }) {
   const [currentUser, setCurrentUser] = useState(null);
   const [userProfile, setUserProfile] = useState(null);
@@ -66,34 +77,51 @@ export function AuthProvider({ children }) {
   };
 
   useEffect(() => {
-    // Check for stored demo user first
-    const storedDemoUser = localStorage.getItem(DEMO_USER_STORAGE_KEY);
-    const storedDemoProfile = localStorage.getItem(DEMO_PROFILE_STORAGE_KEY);
-
-    if (storedDemoUser && storedDemoProfile) {
-      try {
-        setCurrentUser(JSON.parse(storedDemoUser));
-        setUserProfile(JSON.parse(storedDemoProfile));
-        setLoading(false);
-        return;
-      } catch (e) {
-        localStorage.removeItem(DEMO_USER_STORAGE_KEY);
-        localStorage.removeItem(DEMO_PROFILE_STORAGE_KEY);
-      }
-    }
-
+    // If Firebase is not configured, fall back to stored demo user or guest
     if (!auth) {
-      // Firebase not configured; finish loading immediately
+      const storedDemoUser = localStorage.getItem(DEMO_USER_STORAGE_KEY);
+      const storedDemoProfile = localStorage.getItem(DEMO_PROFILE_STORAGE_KEY);
+      if (storedDemoUser && storedDemoProfile) {
+        try {
+          setCurrentUser(JSON.parse(storedDemoUser));
+          setUserProfile(JSON.parse(storedDemoProfile));
+        } catch (e) {
+          clearDemoAndLegacyStorage();
+          setCurrentUser(null);
+          setUserProfile(null);
+        }
+      }
       setLoading(false);
       return;
     }
 
+    // Firebase is configured: ALWAYS listen to auth state changes so real sessions take precedence
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      setCurrentUser(user);
       if (user) {
+        // Active Firebase user: clear any leftover demo markers so they never interfere
+        localStorage.removeItem(DEMO_USER_STORAGE_KEY);
+        localStorage.removeItem(DEMO_PROFILE_STORAGE_KEY);
+        localStorage.removeItem('udyamsathi_demo_profile_data');
+
+        setCurrentUser(user);
         await fetchUserProfile(user.uid);
       } else {
-        setUserProfile(null);
+        // No active Firebase user: check if demo mode was explicitly requested
+        const storedDemoUser = localStorage.getItem(DEMO_USER_STORAGE_KEY);
+        const storedDemoProfile = localStorage.getItem(DEMO_PROFILE_STORAGE_KEY);
+        if (storedDemoUser && storedDemoProfile) {
+          try {
+            setCurrentUser(JSON.parse(storedDemoUser));
+            setUserProfile(JSON.parse(storedDemoProfile));
+          } catch (e) {
+            clearDemoAndLegacyStorage();
+            setCurrentUser(null);
+            setUserProfile(null);
+          }
+        } else {
+          setCurrentUser(null);
+          setUserProfile(null);
+        }
       }
       setLoading(false);
     });
@@ -102,7 +130,15 @@ export function AuthProvider({ children }) {
   }, []);
 
   // Demo user login for fast review or when Firebase credentials are not set
-  const loginAsDemoUser = (completedOnboarding = true) => {
+  const loginAsDemoUser = async (completedOnboarding = true) => {
+    if (auth && auth.currentUser) {
+      try {
+        await signOut(auth);
+      } catch (e) {
+        console.warn('Sign out before demo login error:', e);
+      }
+    }
+
     const demoUser = { ...DEFAULT_DEMO_USER };
     const demoProfile = {
       ...DEFAULT_DEMO_PROFILE,
@@ -125,6 +161,8 @@ export function AuthProvider({ children }) {
       );
     }
 
+    clearDemoAndLegacyStorage();
+
     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
     const user = userCredential.user;
 
@@ -144,6 +182,7 @@ export function AuthProvider({ children }) {
     };
 
     await setDoc(doc(db, 'users', user.uid), newProfile);
+    setCurrentUser(user);
     setUserProfile(newProfile);
 
     return user;
@@ -157,7 +196,10 @@ export function AuthProvider({ children }) {
       );
     }
 
+    clearDemoAndLegacyStorage();
+
     const userCredential = await signInWithEmailAndPassword(auth, email, password);
+    setCurrentUser(userCredential.user);
     const profile = await fetchUserProfile(userCredential.user.uid);
     return { user: userCredential.user, profile };
   };
@@ -169,6 +211,8 @@ export function AuthProvider({ children }) {
         'Firebase credentials are not configured in this deployment. Please configure VITE_FIREBASE_* environment variables or continue as Demo Entrepreneur.'
       );
     }
+
+    clearDemoAndLegacyStorage();
 
     const userCredential = await signInWithPopup(auth, googleProvider);
     const user = userCredential.user;
@@ -193,14 +237,21 @@ export function AuthProvider({ children }) {
       profile = userDocSnap.data();
     }
 
+    setCurrentUser(user);
     setUserProfile(profile);
     return { user, profile };
   };
 
   // Log out
   const logout = async () => {
-    localStorage.removeItem(DEMO_USER_STORAGE_KEY);
-    localStorage.removeItem(DEMO_PROFILE_STORAGE_KEY);
+    const currentUid = currentUser?.uid;
+    clearDemoAndLegacyStorage();
+
+    if (currentUid) {
+      localStorage.removeItem(`udyamsaathi_onboarding_draft_${currentUid}`);
+      localStorage.removeItem(`udyamsaathi.businesses_${currentUid}`);
+      localStorage.removeItem(`udyamsaathi.activeBusinessId_${currentUid}`);
+    }
 
     if (auth) {
       try {

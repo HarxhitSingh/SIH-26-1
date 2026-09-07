@@ -29,7 +29,7 @@ import MarketAreaMap from '../components/strategy/MarketAreaMap';
 import FeasibilityGauge from '../components/strategy/FeasibilityGauge';
 import SwotGrid from '../components/strategy/SwotGrid';
 
-const STRATEGY_STORAGE_KEY = 'udyamsathi_business_strategy_cache';
+const getStrategyStorageKey = (bizId) => `udyamsathi_business_strategy_cache_${bizId || 'default'}`;
 
 const LOADING_STEPS = [
   'Understanding your business profile & industry',
@@ -45,23 +45,37 @@ const LOADING_STEPS = [
 export default function StrategyPage() {
   const { profile, loading: profileLoading } = useEntrepreneurProfile();
 
-  const [strategy, setStrategy] = useState(() => {
-    try {
-      const cached = localStorage.getItem(STRATEGY_STORAGE_KEY);
-      return cached ? JSON.parse(cached) : null;
-    } catch {
-      return null;
-    }
-  });
+  const [strategy, setStrategy] = useState(null);
+  const [aiSummary, setAiSummary] = useState(null);
 
-  const [aiSummary, setAiSummary] = useState(() => {
+  // Reload strategy when active profile changes
+  useEffect(() => {
     try {
-      const cached = localStorage.getItem(STRATEGY_STORAGE_KEY);
-      return cached ? JSON.parse(cached).aiSummary || null : null;
-    } catch {
-      return null;
+      localStorage.removeItem('udyamsathi_business_strategy_cache');
+    } catch {}
+
+    if (!profile?.id) {
+      setStrategy(null);
+      setAiSummary(null);
+      return;
     }
-  });
+
+    const key = getStrategyStorageKey(profile.id);
+    try {
+      const cached = localStorage.getItem(key);
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        setStrategy(parsed);
+        setAiSummary(parsed.aiSummary || null);
+      } else {
+        setStrategy(null);
+        setAiSummary(null);
+      }
+    } catch {
+      setStrategy(null);
+      setAiSummary(null);
+    }
+  }, [profile?.id]);
 
   const [isGenerating, setIsGenerating] = useState(false);
   const [activeStepIndex, setActiveStepIndex] = useState(0);
@@ -73,7 +87,7 @@ export default function StrategyPage() {
     unitSellingPrice: '',
     unitVariableCost: '',
     fixedMonthlyCosts: '',
-    locality: ''
+    monthlyTargetVolume: ''
   });
 
   // Execution flow with realistic multi-step loading experience
@@ -86,7 +100,7 @@ export default function StrategyPage() {
     // Progressive step simulation for user transparency
     const stepInterval = setInterval(() => {
       setActiveStepIndex((prev) => {
-        if (prev < LOADING_STEPS.length - 1) {
+        if (prev < LOADING_STEPS.length - 2) {
           return prev + 1;
         }
         return prev;
@@ -94,12 +108,12 @@ export default function StrategyPage() {
     }, 450);
 
     try {
-      // Clean overrides
+      // Build clean overrides object
       const cleanOverrides = {};
       if (overrides.unitSellingPrice) cleanOverrides.unitSellingPrice = parseFloat(overrides.unitSellingPrice);
       if (overrides.unitVariableCost) cleanOverrides.unitVariableCost = parseFloat(overrides.unitVariableCost);
       if (overrides.fixedMonthlyCosts) cleanOverrides.fixedMonthlyCosts = parseFloat(overrides.fixedMonthlyCosts);
-      if (overrides.locality) cleanOverrides.locality = overrides.locality;
+      if (overrides.monthlyTargetVolume) cleanOverrides.monthlyTargetVolume = parseFloat(overrides.monthlyTargetVolume);
 
       // Deterministic analytical run
       const generated = await generateBusinessStrategy(profile, cleanOverrides);
@@ -112,8 +126,8 @@ export default function StrategyPage() {
       clearInterval(stepInterval);
       setActiveStepIndex(LOADING_STEPS.length - 1);
 
-      // Cache locally for offline availability
-      localStorage.setItem(STRATEGY_STORAGE_KEY, JSON.stringify(generated));
+      // Cache locally for offline availability scoped to this business
+      localStorage.setItem(getStrategyStorageKey(profile?.id), JSON.stringify(generated));
 
       setStrategy(generated);
       setAiSummary(aiResult);

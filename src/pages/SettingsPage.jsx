@@ -50,7 +50,7 @@ export default function SettingsPage() {
     { id: 'privacy', label: 'Privacy & Data Terms', icon: Shield }
   ];
 
-  const displayName = profile?.personalInfo?.fullName || userProfile?.name || currentUser?.displayName || 'Entrepreneur';
+  const displayName = userProfile?.name || currentUser?.displayName || profile?.personalInfo?.fullName || 'Entrepreneur';
 
   const triggerSaveNote = (msg) => {
     setSavedNote(msg);

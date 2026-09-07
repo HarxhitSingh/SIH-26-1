@@ -91,7 +91,7 @@ export default function Sidebar({ onCloseMobile }) {
     }
   ];
 
-  const displayName = activeBusiness?.personalInfo?.fullName || userProfile?.name || currentUser?.displayName || 'Entrepreneur';
+  const displayName = userProfile?.name || currentUser?.displayName || activeBusiness?.personalInfo?.fullName || 'Entrepreneur';
   const businessName = activeBusiness?.name || 'My Enterprise';
   const stage = activeBusiness?.stage || 'PLANNING';
   const sector = activeBusiness?.sector || 'Services';

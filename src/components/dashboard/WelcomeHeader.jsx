@@ -23,7 +23,7 @@ export default function WelcomeHeader() {
     return t('dashboard.greetingEvening', 'Good evening');
   };
 
-  const displayName = business.personalInfo?.fullName || profile?.personalInfo?.fullName || userProfile?.name || currentUser?.displayName || 'Entrepreneur';
+  const displayName = userProfile?.name || currentUser?.displayName || business.personalInfo?.fullName || profile?.personalInfo?.fullName || 'Entrepreneur';
   const businessName = business.name || 'Your Enterprise';
   const stage = business.stage || 'PLANNING';
   const location = business.location || (business.personalInfo?.district

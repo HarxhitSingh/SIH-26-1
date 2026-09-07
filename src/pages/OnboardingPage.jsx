@@ -16,11 +16,12 @@ import {
   AlertCircle
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { useBusiness, normalizeBusinessRecord } from '../context/BusinessContext';
 import { doc, setDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../firebase/config';
 import Logo from '../components/common/Logo';
 
-const DRAFT_STORAGE_KEY = 'udyamsaathi_onboarding_draft';
+export const getDraftStorageKey = (uid) => uid ? `udyamsaathi_onboarding_draft_${uid}` : 'udyamsaathi_onboarding_draft_demo';
 
 const INDIAN_STATES = [
   'Andhra Pradesh', 'Arunachal Pradesh', 'Assam', 'Bihar', 'Chhattisgarh',
@@ -125,6 +126,7 @@ const INITIAL_FORM = {
 
 export default function OnboardingPage() {
   const { currentUser, userProfile, refreshProfile } = useAuth();
+  const { syncUserProfileFromOnboarding } = useBusiness();
   const navigate = useNavigate();
 
   const [currentStep, setCurrentStep] = useState(1);
@@ -132,31 +134,46 @@ export default function OnboardingPage() {
   const [errors, setErrors] = useState({});
   const [saving, setSaving] = useState(false);
 
-  // Initialize draft and prefill name/email
+  // Initialize draft strictly scoped to active user
   useEffect(() => {
+    // Purge legacy unscoped draft
     try {
-      const savedDraft = localStorage.getItem(DRAFT_STORAGE_KEY);
+      localStorage.removeItem('udyamsaathi_onboarding_draft');
+    } catch {}
+
+    if (!currentUser) return;
+    const userDraftKey = getDraftStorageKey(currentUser.uid);
+
+    try {
+      const savedDraft = localStorage.getItem(userDraftKey);
       if (savedDraft) {
         setFormData(JSON.parse(savedDraft));
-      } else if (currentUser) {
-        setFormData((prev) => ({
-          ...prev,
-          fullName: currentUser.displayName || userProfile?.name || ''
-        }));
+      } else {
+        // Initialize fresh form with authentic registered name
+        setFormData({
+          ...INITIAL_FORM,
+          fullName: userProfile?.name || currentUser.displayName || ''
+        });
       }
     } catch (e) {
       console.error('Draft load error', e);
+      setFormData({
+        ...INITIAL_FORM,
+        fullName: userProfile?.name || currentUser.displayName || ''
+      });
     }
-  }, [currentUser, userProfile]);
+  }, [currentUser?.uid, userProfile?.name]);
 
-  // Persist draft on changes
+  // Persist draft on changes scoped to active user
   useEffect(() => {
+    if (!currentUser?.uid) return;
+    const userDraftKey = getDraftStorageKey(currentUser.uid);
     try {
-      localStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify(formData));
+      localStorage.setItem(userDraftKey, JSON.stringify(formData));
     } catch (e) {
       console.error('Draft save error', e);
     }
-  }, [formData]);
+  }, [formData, currentUser?.uid]);
 
   const handleChange = (field, value) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -322,6 +339,28 @@ export default function OnboardingPage() {
         }
       };
 
+      // Prepare normalized primary business record for multi-business schema compatibility
+      const bizId = `biz_${currentUser.uid.slice(0, 8)}_${Date.now().toString(36)}`;
+      const primaryBusiness = normalizeBusinessRecord({
+        ...structuredProfile,
+        id: bizId,
+        name: formData.businessName.trim() || 'My Enterprise',
+        stage: formData.stage,
+        sector: formData.sector,
+        type: formData.businessType,
+        description: formData.description.trim(),
+        productService: formData.productService.trim(),
+        targetCustomers: formData.targetCustomers,
+        location: formData.businessLocation.trim() || formData.district.trim() || 'India',
+        personalInfo: structuredProfile.personalInfo,
+        eligibilityProfile: structuredProfile.eligibilityProfile,
+        financialProfile: structuredProfile.financialProfile,
+        goals: structuredProfile.goals
+      });
+
+      structuredProfile.businesses = [primaryBusiness];
+      structuredProfile.activeBusinessId = bizId;
+
       // Save structured profile
       if (db && !currentUser?.isDemo) {
         // 1. Save structured profile to Firestore
@@ -329,7 +368,7 @@ export default function OnboardingPage() {
 
         // 2. Mark user doc as onboarding completed
         await updateDoc(doc(db, 'users', currentUser.uid), {
-          name: formData.fullName.trim() || currentUser.displayName,
+          name: formData.fullName.trim() || currentUser.displayName || 'Entrepreneur',
           onboardingCompleted: true,
           updatedAt: serverTimestamp()
         });
@@ -349,8 +388,15 @@ export default function OnboardingPage() {
         }
       }
 
-      // Clear local draft
-      localStorage.removeItem(DRAFT_STORAGE_KEY);
+      // Clear user draft and any legacy drafts
+      const userDraftKey = getDraftStorageKey(currentUser.uid);
+      localStorage.removeItem(userDraftKey);
+      localStorage.removeItem('udyamsaathi_onboarding_draft');
+
+      // Update BusinessContext immediately
+      if (syncUserProfileFromOnboarding) {
+        syncUserProfileFromOnboarding(structuredProfile);
+      }
 
       // Refresh AuthContext state so route guard knows profile is complete
       await refreshProfile();
@@ -362,7 +408,6 @@ export default function OnboardingPage() {
     } finally {
       setSaving(false);
     }
-
   };
 
   const stepsMeta = [

@@ -17,8 +17,8 @@ export default function SignUpPage() {
   const { signupWithEmail, loginWithGoogle, loginAsDemoUser, isFirebaseConfigured } = useAuth();
   const navigate = useNavigate();
 
-  const handleDemoLogin = (completed = false) => {
-    const { profile } = loginAsDemoUser(completed);
+  const handleDemoLogin = async (completed = false) => {
+    const { profile } = await loginAsDemoUser(completed);
     if (profile?.onboardingCompleted) {
       navigate('/dashboard', { replace: true });
     } else {

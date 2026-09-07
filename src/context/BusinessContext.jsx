@@ -5,22 +5,26 @@ import { useAuth } from './AuthContext';
 
 const BusinessContext = createContext(null);
 
+export const getStorageKey = (uid) => uid ? `udyamsaathi.businesses_${uid}` : 'udyamsaathi.businesses_demo';
+export const getActiveIdKey = (uid) => uid ? `udyamsaathi.activeBusinessId_${uid}` : 'udyamsaathi.activeBusinessId_demo';
+
+// Legacy keys reference for backward compatibility purge
 export const STORAGE_KEYS = {
   BUSINESSES: 'udyamsaathi.businesses',
   ACTIVE_ID: 'udyamsaathi.activeBusinessId'
 };
 
-// Initial default seed profile (RoomNext)
+// Initial default seed profile (Clean Template)
 export const DEFAULT_BUSINESS = {
-  id: 'biz_roomnext_primary',
-  name: 'RoomNext',
+  id: 'biz_default_enterprise',
+  name: 'New Enterprise',
   stage: 'IDEA',
   sector: 'Services',
   type: 'Proprietorship',
-  description: 'A newly idea for Students and young professionals seeking flexible, tech-enabled managed co-living spaces.',
+  description: 'Enterprise planning and government scheme enablement.',
   productService: 'General Products/Services',
   targetCustomers: 'Local consumers & retail',
-  location: 'Agra, Uttar Pradesh',
+  location: 'India',
   areaClassification: 'Urban',
   operatingStatus: 'Planning to Launch',
   employeesCount: '0',
@@ -29,9 +33,9 @@ export const DEFAULT_BUSINESS = {
   registrationStatus: 'Unregistered',
   licensesHeld: 'None',
   financialProfile: {
-    availableCapital: '₹75,000',
-    estimatedProjectCost: '₹3,00,000',
-    fundingRequired: '₹2,25,000',
+    availableCapital: '₹50,000',
+    estimatedProjectCost: '₹2,00,000',
+    fundingRequired: '₹1,50,000',
     existingRevenue: 'N/A',
     existingExpenses: 'N/A',
     hasExistingLoans: 'No',
@@ -41,17 +45,17 @@ export const DEFAULT_BUSINESS = {
   goals: {
     supportNeeded: ['Government schemes', 'Loans / funding', 'Business registration'],
     primaryChallenge: 'Navigating government schemes & paperwork',
-    twelveMonthGoal: 'Start my business and onboard first 50 residents',
-    additionalNotes: 'Targeting PMEGP and local enterprise incentives'
+    twelveMonthGoal: 'Establish operations and achieve break-even',
+    additionalNotes: ''
   },
   personalInfo: {
-    fullName: 'Jatin Rawat',
-    age: '24',
-    gender: 'Male',
-    phone: '+91 98765 43210',
-    state: 'Uttar Pradesh',
-    district: 'Agra',
-    locality: 'Agra City',
+    fullName: '',
+    age: '',
+    gender: 'Not specified',
+    phone: '',
+    state: '',
+    district: '',
+    locality: '',
     ruralUrban: 'Urban',
     entrepreneurStatus: 'PLANNING',
     experienceLevel: 'First-time entrepreneur'
@@ -59,13 +63,28 @@ export const DEFAULT_BUSINESS = {
   eligibilityProfile: {
     category: 'General',
     incomeRange: '₹2.5 Lakhs - ₹5 Lakhs',
-    employmentStatus: 'Employed',
+    employmentStatus: 'Self-employed',
     disabilityStatus: 'No',
     minorityStatus: 'No',
-    notes: 'Aspiring student housing entrepreneur'
+    notes: ''
   },
   createdAt: '2026-01-01T00:00:00.000Z',
   updatedAt: '2026-01-01T00:00:00.000Z'
+};
+
+// Helper to create a fresh default business profile tailored for a specific user
+export const createDefaultBusinessForUser = (user, fallbackName = '') => {
+  const userName = user?.displayName || fallbackName || 'Entrepreneur';
+  const bizId = `biz_${(user?.uid || 'user').slice(0, 8)}_${Date.now().toString(36)}`;
+  return normalizeBusinessRecord({
+    ...DEFAULT_BUSINESS,
+    id: bizId,
+    name: 'My Enterprise',
+    personalInfo: {
+      ...DEFAULT_BUSINESS.personalInfo,
+      fullName: userName
+    }
+  });
 };
 
 // Helper to ensure nested compatibility for existing consumers (profile.business.*, profile.financialProfile.*)
@@ -77,14 +96,14 @@ export function normalizeBusinessRecord(raw) {
   const goals = raw.goals || {};
   const eligibility = raw.eligibilityProfile || {};
 
-  const name = raw.name || bizObj.name || 'RoomNext';
+  const name = raw.name || bizObj.name || 'My Enterprise';
   const stage = (raw.stage || bizObj.stage || 'IDEA').toUpperCase();
   const sector = raw.sector || bizObj.sector || 'Services';
   const type = raw.type || bizObj.type || 'Proprietorship';
   const description = raw.description || bizObj.description || '';
   const productService = raw.productService || bizObj.productService || '';
   const targetCustomers = raw.targetCustomers || bizObj.targetCustomers || 'Local consumers & retail';
-  const location = raw.location || bizObj.location || (personal.district ? `${personal.district}, ${personal.state}` : 'Agra, Uttar Pradesh');
+  const location = raw.location || bizObj.location || (personal.district ? `${personal.district}, ${personal.state}` : 'India');
   const areaClassification = raw.areaClassification || personal.ruralUrban || 'Urban';
   const operatingStatus = raw.operatingStatus || (bizObj.status === 'OPERATING' ? 'Active Enterprise' : 'Planning to Launch');
   const employeesCount = raw.employeesCount || bizObj.employeesCount || '0';
@@ -112,12 +131,12 @@ export function normalizeBusinessRecord(raw) {
     registrationStatus,
     licensesHeld,
     personalInfo: {
-      fullName: personal.fullName || 'Jatin Rawat',
+      fullName: personal.fullName || '',
       age: personal.age || '',
       gender: personal.gender || 'Not specified',
       phone: personal.phone || '',
-      state: personal.state || (location.includes(',') ? location.split(',')[1].trim() : 'Uttar Pradesh'),
-      district: personal.district || (location.includes(',') ? location.split(',')[0].trim() : 'Agra'),
+      state: personal.state || (location.includes(',') ? location.split(',')[1].trim() : ''),
+      district: personal.district || (location.includes(',') ? location.split(',')[0].trim() : ''),
       locality: personal.locality || '',
       ruralUrban: areaClassification,
       entrepreneurStatus: raw.operatingStatus === 'Active Enterprise' ? 'OPERATING' : 'PLANNING',
@@ -134,9 +153,9 @@ export function normalizeBusinessRecord(raw) {
       ...eligibility
     },
     financialProfile: {
-      availableCapital: fin.availableCapital || '₹75,000',
-      estimatedProjectCost: fin.estimatedProjectCost || '₹3,00,000',
-      fundingRequired: fin.fundingRequired || '₹2,25,000',
+      availableCapital: fin.availableCapital || '₹50,000',
+      estimatedProjectCost: fin.estimatedProjectCost || '₹2,00,000',
+      fundingRequired: fin.fundingRequired || '₹1,50,000',
       existingRevenue: fin.existingRevenue || 'N/A',
       existingExpenses: fin.existingExpenses || 'N/A',
       hasExistingLoans: fin.hasExistingLoans || 'No',
@@ -151,7 +170,6 @@ export function normalizeBusinessRecord(raw) {
       additionalNotes: goals.additionalNotes || '',
       ...goals
     },
-    // Mirror nested business object for backward compatibility
     business: {
       name,
       stage,
@@ -175,36 +193,40 @@ export function normalizeBusinessRecord(raw) {
 }
 
 export function BusinessProvider({ children }) {
-  const { currentUser } = useAuth();
+  const { currentUser, userProfile } = useAuth();
   const [businesses, setBusinesses] = useState([]);
   const [activeBusinessId, setActiveBusinessIdState] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Initialize and load businesses from storage or Firestore
+  // Initialize and load businesses strictly scoped to the active user
   useEffect(() => {
     async function loadBusinesses() {
+      // If no user is logged in, reset businesses
+      if (!currentUser) {
+        setBusinesses([]);
+        setActiveBusinessIdState(null);
+        setLoading(false);
+        return;
+      }
+
       setLoading(true);
       setError(null);
+
+      // Purge legacy unscoped keys that caused cross-user leakage
+      try {
+        localStorage.removeItem(STORAGE_KEYS.BUSINESSES);
+        localStorage.removeItem(STORAGE_KEYS.ACTIVE_ID);
+      } catch {}
+
+      const userStorageKey = getStorageKey(currentUser.uid);
+      const userActiveIdKey = getActiveIdKey(currentUser.uid);
+
       try {
         let loadedList = [];
         let storedActiveId = null;
 
-        // 1. Check local storage
-        try {
-          const rawStored = localStorage.getItem(STORAGE_KEYS.BUSINESSES);
-          if (rawStored) {
-            const parsed = JSON.parse(rawStored);
-            if (Array.isArray(parsed) && parsed.length > 0) {
-              loadedList = parsed.map(normalizeBusinessRecord);
-            }
-          }
-          storedActiveId = localStorage.getItem(STORAGE_KEYS.ACTIVE_ID);
-        } catch (e) {
-          console.warn('Error reading businesses from localStorage', e);
-        }
-
-        // 2. If Firestore is active and user logged in, check user's profile
+        // 1. If Firebase is active and user is a real authenticated account, fetch their isolated Firestore profile
         if (db && currentUser?.uid && !currentUser?.isDemo) {
           try {
             const docRef = doc(db, 'entrepreneurProfiles', currentUser.uid);
@@ -212,7 +234,13 @@ export function BusinessProvider({ children }) {
             if (snap.exists()) {
               const data = snap.data();
               if (data.businesses && Array.isArray(data.businesses) && data.businesses.length > 0) {
-                loadedList = data.businesses.map(normalizeBusinessRecord);
+                loadedList = data.businesses.map(b => {
+                  const normalized = normalizeBusinessRecord(b);
+                  if (userProfile?.name && (!normalized.personalInfo?.fullName || normalized.personalInfo.fullName === 'Shreya Singh')) {
+                    normalized.personalInfo.fullName = userProfile.name;
+                  }
+                  return normalized;
+                });
                 if (data.activeBusinessId) {
                   storedActiveId = data.activeBusinessId;
                 }
@@ -222,27 +250,40 @@ export function BusinessProvider({ children }) {
                   ...data,
                   id: data.business.id || `biz_${currentUser.uid.slice(0, 8)}`,
                   name: data.business.name,
-                  stage: data.business.stage
+                  stage: data.business.stage,
+                  personalInfo: {
+                    ...data.personalInfo,
+                    fullName: userProfile?.name || currentUser.displayName || data.personalInfo?.fullName || ''
+                  }
                 });
                 loadedList = [single];
                 storedActiveId = single.id;
               }
             }
           } catch (fireErr) {
-            console.warn('Firestore business fetch error, using local fallback:', fireErr);
+            console.warn('Firestore business fetch error, falling back to user-scoped cache:', fireErr);
           }
         }
 
-        // 3. Fallback: if no businesses found, seed default (RoomNext)
+        // 2. If not loaded from Firestore, check user-scoped local storage
         if (loadedList.length === 0) {
-          // Check if legacy demo profile exists
-          let legacyData = null;
           try {
-            const leg = localStorage.getItem('udyamsathi_demo_profile_data');
-            if (leg) legacyData = JSON.parse(leg);
-          } catch {}
+            const rawStored = localStorage.getItem(userStorageKey);
+            if (rawStored) {
+              const parsed = JSON.parse(rawStored);
+              if (Array.isArray(parsed) && parsed.length > 0) {
+                loadedList = parsed.map(normalizeBusinessRecord);
+              }
+            }
+            storedActiveId = localStorage.getItem(userActiveIdKey);
+          } catch (e) {
+            console.warn('Error reading user-scoped storage:', e);
+          }
+        }
 
-          const initialBiz = normalizeBusinessRecord(legacyData || DEFAULT_BUSINESS);
+        // 3. Fallback: Seed clean default profile specifically for THIS user
+        if (loadedList.length === 0) {
+          const initialBiz = createDefaultBusinessForUser(currentUser, userProfile?.name);
           loadedList = [initialBiz];
           storedActiveId = initialBiz.id;
         }
@@ -255,24 +296,24 @@ export function BusinessProvider({ children }) {
         setBusinesses(loadedList);
         setActiveBusinessIdState(validActiveId);
 
-        // Sync to localStorage
+        // Sync to user-scoped localStorage
         try {
-          localStorage.setItem(STORAGE_KEYS.BUSINESSES, JSON.stringify(loadedList));
-          localStorage.setItem(STORAGE_KEYS.ACTIVE_ID, validActiveId);
+          localStorage.setItem(userStorageKey, JSON.stringify(loadedList));
+          localStorage.setItem(userActiveIdKey, validActiveId);
         } catch {}
       } catch (err) {
         console.error('Fatal error loading businesses:', err);
         setError('Failed to load businesses');
-        const fallback = [DEFAULT_BUSINESS];
+        const fallback = [createDefaultBusinessForUser(currentUser, userProfile?.name)];
         setBusinesses(fallback);
-        setActiveBusinessIdState(DEFAULT_BUSINESS.id);
+        setActiveBusinessIdState(fallback[0].id);
       } finally {
         setLoading(false);
       }
     }
 
     loadBusinesses();
-  }, [currentUser]);
+  }, [currentUser?.uid, currentUser?.isDemo, userProfile?.name]);
 
   // Derived active business
   const activeBusiness = useMemo(() => {
@@ -281,12 +322,16 @@ export function BusinessProvider({ children }) {
     return found || businesses[0];
   }, [businesses, activeBusinessId]);
 
-  // Persist helper
+  // Persist helper strictly scoped to current user
   const persistState = async (updatedList, newActiveId) => {
+    if (!currentUser) return;
+    const userStorageKey = getStorageKey(currentUser.uid);
+    const userActiveIdKey = getActiveIdKey(currentUser.uid);
+
     try {
-      localStorage.setItem(STORAGE_KEYS.BUSINESSES, JSON.stringify(updatedList));
+      localStorage.setItem(userStorageKey, JSON.stringify(updatedList));
       if (newActiveId) {
-        localStorage.setItem(STORAGE_KEYS.ACTIVE_ID, newActiveId);
+        localStorage.setItem(userActiveIdKey, newActiveId);
       }
     } catch (e) {
       console.warn('LocalStorage save error:', e);
@@ -316,14 +361,38 @@ export function BusinessProvider({ children }) {
     if (!target) return;
 
     setActiveBusinessIdState(id);
-    try {
-      localStorage.setItem(STORAGE_KEYS.ACTIVE_ID, id);
-    } catch {}
+    if (currentUser) {
+      try {
+        localStorage.setItem(getActiveIdKey(currentUser.uid), id);
+      } catch {}
+    }
 
     if (db && currentUser?.uid && !currentUser?.isDemo) {
       try {
         const docRef = doc(db, 'entrepreneurProfiles', currentUser.uid);
         updateDoc(docRef, { activeBusinessId: id, updatedAt: serverTimestamp() });
+      } catch {}
+    }
+  };
+
+  // Direct sync from onboarding completion
+  const syncUserProfileFromOnboarding = (profileData) => {
+    if (!profileData) return;
+    const bizList = profileData.businesses && Array.isArray(profileData.businesses) && profileData.businesses.length > 0
+      ? profileData.businesses.map(normalizeBusinessRecord)
+      : [normalizeBusinessRecord({
+          ...profileData,
+          id: profileData.business?.id || `biz_${(currentUser?.uid || 'user').slice(0, 8)}_${Date.now().toString(36)}`,
+          name: profileData.business?.name || 'My Enterprise'
+        })];
+    const activeId = profileData.activeBusinessId || bizList[0].id;
+    setBusinesses(bizList);
+    setActiveBusinessIdState(activeId);
+
+    if (currentUser?.uid) {
+      try {
+        localStorage.setItem(getStorageKey(currentUser.uid), JSON.stringify(bizList));
+        localStorage.setItem(getActiveIdKey(currentUser.uid), activeId);
       } catch {}
     }
   };
@@ -403,17 +472,18 @@ export function BusinessProvider({ children }) {
     return true;
   };
 
-  // Refresh businesses
+  // Refresh businesses from user-scoped storage
   const refreshBusinesses = () => {
+    if (!currentUser) return;
     try {
-      const rawStored = localStorage.getItem(STORAGE_KEYS.BUSINESSES);
+      const rawStored = localStorage.getItem(getStorageKey(currentUser.uid));
       if (rawStored) {
         const parsed = JSON.parse(rawStored);
         if (Array.isArray(parsed) && parsed.length > 0) {
           setBusinesses(parsed.map(normalizeBusinessRecord));
         }
       }
-      const storedActive = localStorage.getItem(STORAGE_KEYS.ACTIVE_ID);
+      const storedActive = localStorage.getItem(getActiveIdKey(currentUser.uid));
       if (storedActive) setActiveBusinessIdState(storedActive);
     } catch {}
   };
@@ -428,7 +498,8 @@ export function BusinessProvider({ children }) {
     createBusiness,
     updateBusiness,
     deleteBusiness,
-    refreshBusinesses
+    refreshBusinesses,
+    syncUserProfileFromOnboarding
   };
 
   return (
@@ -448,7 +519,8 @@ const fallbackBusinessContext = {
   createBusiness: async () => DEFAULT_BUSINESS,
   updateBusiness: async () => DEFAULT_BUSINESS,
   deleteBusiness: async () => false,
-  refreshBusinesses: () => {}
+  refreshBusinesses: () => {},
+  syncUserProfileFromOnboarding: () => {}
 };
 
 export function useBusiness() {
