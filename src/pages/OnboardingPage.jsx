@@ -335,7 +335,7 @@ export default function OnboardingPage() {
 
         onboarding: {
           completed: true,
-          completedAt: serverTimestamp()
+          completedAt: new Date().toISOString()
         }
       };
 
@@ -355,7 +355,9 @@ export default function OnboardingPage() {
         personalInfo: structuredProfile.personalInfo,
         eligibilityProfile: structuredProfile.eligibilityProfile,
         financialProfile: structuredProfile.financialProfile,
-        goals: structuredProfile.goals
+        goals: structuredProfile.goals,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
       });
 
       structuredProfile.businesses = [primaryBusiness];
@@ -363,8 +365,11 @@ export default function OnboardingPage() {
 
       // Save structured profile
       if (db && !currentUser?.isDemo) {
-        // 1. Save structured profile to Firestore
-        await setDoc(doc(db, 'entrepreneurProfiles', currentUser.uid), structuredProfile);
+        // 1. Save structured profile to Firestore (with serverTimestamp only at document root level)
+        await setDoc(doc(db, 'entrepreneurProfiles', currentUser.uid), {
+          ...structuredProfile,
+          updatedAt: serverTimestamp()
+        });
 
         // 2. Mark user doc as onboarding completed
         await updateDoc(doc(db, 'users', currentUser.uid), {
