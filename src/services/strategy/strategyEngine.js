@@ -27,7 +27,10 @@ import { GOVERNMENT_SCHEMES } from '../../data/schemesData';
 import { evaluateSchemeEligibility } from '../eligibilityEngine';
 
 export async function generateBusinessStrategy(profile, localOverrides = {}) {
-  const business = profile?.business || {};
+  const business = {
+    ...(profile || {}),
+    ...(profile?.business || {})
+  };
   const personal = profile?.personalInfo || {};
   const finances = profile?.financialProfile || {};
 

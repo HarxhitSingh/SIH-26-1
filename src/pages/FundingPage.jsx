@@ -33,6 +33,8 @@ import AffordabilityIndicator from '../components/funding/AffordabilityIndicator
 import WorkingCapitalPlanner from '../components/funding/WorkingCapitalPlanner';
 import ProjectCostBreakdown from '../components/funding/ProjectCostBreakdown';
 import AiFundingAdvisor from '../components/funding/AiFundingAdvisor';
+import ConsultExpertBanner from '../components/expert/ConsultExpertBanner';
+import { FUNDING_EXPERT } from '../data/expertConsultants';
 
 export default function FundingPage() {
   const { profile, loading, error, updateProfileData } = useEntrepreneurProfile();
@@ -239,6 +241,9 @@ export default function FundingPage() {
           </Link>
         </div>
       </div>
+
+      {/* SECTION 10: 💼 Consult an Expert (Chartered Accountant / Finance Expert) */}
+      <ConsultExpertBanner expert={FUNDING_EXPERT} />
 
       {/* Bottom Concise Statutory Financial Disclaimer (Section 41) */}
       <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 text-center text-xs text-slate-500 leading-relaxed max-w-4xl mx-auto">

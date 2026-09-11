@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import {
   Compass,
@@ -28,6 +28,8 @@ import { generateGroundedAiSummary } from '../services/strategy/strategyAdvisorS
 import MarketAreaMap from '../components/strategy/MarketAreaMap';
 import FeasibilityGauge from '../components/strategy/FeasibilityGauge';
 import SwotGrid from '../components/strategy/SwotGrid';
+import ConsultExpertBanner from '../components/expert/ConsultExpertBanner';
+import { STRATEGY_EXPERT } from '../data/expertConsultants';
 
 const getStrategyStorageKey = (bizId) => `udyamsathi_business_strategy_cache_${bizId || 'default'}`;
 
@@ -54,13 +56,13 @@ export default function StrategyPage() {
       localStorage.removeItem('udyamsathi_business_strategy_cache');
     } catch {}
 
-    if (!profile?.id) {
+    if (!profile) {
       setStrategy(null);
       setAiSummary(null);
       return;
     }
 
-    const key = getStrategyStorageKey(profile.id);
+    const key = getStrategyStorageKey(profile.id || profile.business?.name || profile.name || 'default');
     try {
       const cached = localStorage.getItem(key);
       if (cached) {
@@ -75,7 +77,7 @@ export default function StrategyPage() {
       setStrategy(null);
       setAiSummary(null);
     }
-  }, [profile?.id]);
+  }, [profile?.id, profile?.name, profile?.business?.name]);
 
   const [isGenerating, setIsGenerating] = useState(false);
   const [activeStepIndex, setActiveStepIndex] = useState(0);
@@ -127,7 +129,7 @@ export default function StrategyPage() {
       setActiveStepIndex(LOADING_STEPS.length - 1);
 
       // Cache locally for offline availability scoped to this business
-      localStorage.setItem(getStrategyStorageKey(profile?.id), JSON.stringify(generated));
+      localStorage.setItem(getStrategyStorageKey(profile?.id || profile?.business?.name || profile?.name || 'default'), JSON.stringify(generated));
 
       setStrategy(generated);
       setAiSummary(aiResult);
@@ -160,7 +162,7 @@ export default function StrategyPage() {
     );
   }
 
-  const businessName = profile?.business?.name || 'My Enterprise';
+  const businessName = profile?.business?.name || profile?.name || 'My Enterprise';
   const locationText = `${profile?.personalInfo?.district || 'Your District'}, ${profile?.personalInfo?.state || 'India'}`;
 
   return (
@@ -306,6 +308,13 @@ export default function StrategyPage() {
             <Sparkles className="w-4 h-4" />
             <span>Generate Business Strategy Now</span>
           </button>
+        </div>
+      )}
+
+      {/* Consult Expert Banner in Empty State */}
+      {!strategy && !isGenerating && (
+        <div className="max-w-4xl mx-auto">
+          <ConsultExpertBanner expert={STRATEGY_EXPERT} />
         </div>
       )}
 
@@ -984,7 +993,10 @@ export default function StrategyPage() {
             </div>
           </div>
 
-          {/* 13. OFFICIAL TRUST & ADVISORY DISCLAIMER */}
+          {/* 13. 💼 CONSULT AN EXPERT (BUSINESS ANALYST / STRATEGY CONSULTANT) */}
+          <ConsultExpertBanner expert={STRATEGY_EXPERT} />
+
+          {/* 14. OFFICIAL TRUST & ADVISORY DISCLAIMER */}
           <div className="p-5 rounded-2xl bg-slate-100 border border-slate-200 flex items-start gap-3 text-xs text-slate-600 leading-relaxed">
             <ShieldCheck className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
             <div>
