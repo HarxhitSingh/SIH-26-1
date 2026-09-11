@@ -18,6 +18,7 @@ import SchemesPage from './pages/SchemesPage';
 import SchemeDetailPage from './pages/SchemeDetailPage';
 import FundingPage from './pages/FundingPage';
 import StrategyPage from './pages/StrategyPage';
+import MarketingHubPage from './pages/MarketingHubPage';
 import RoadmapPage from './pages/RoadmapPage';
 import ProfessionalsPage from './pages/ProfessionalsPage';
 import AdvisorPage from './pages/AdvisorPage';
@@ -67,6 +68,7 @@ export default function App() {
                   <Route path="/schemes/:id" element={<SchemeDetailPage />} />
                   <Route path="/funding" element={<FundingPage />} />
                   <Route path="/strategy" element={<StrategyPage />} />
+                  <Route path="/marketing" element={<MarketingHubPage />} />
                   <Route path="/roadmap" element={<RoadmapPage />} />
                   <Route path="/professionals" element={<ProfessionalsPage />} />
                   <Route path="/advisor" element={<AdvisorPage />} />

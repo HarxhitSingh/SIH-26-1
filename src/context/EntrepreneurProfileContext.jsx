@@ -68,6 +68,13 @@ export const DEFAULT_DEMO_ENTREPRENEUR_PROFILE = {
       inventory: 150000,
       workingCapital: 150000,
       other: 50000
+    },
+    workingCapitalAllocations: {
+      rawMaterials: 60000,
+      salaries: 35000,
+      rentUtilities: 15000,
+      marketing: 30000,
+      other: 10000
     }
   },
   goals: {

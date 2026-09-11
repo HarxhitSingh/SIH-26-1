@@ -40,7 +40,14 @@ export const DEFAULT_BUSINESS = {
     existingExpenses: 'N/A',
     hasExistingLoans: 'No',
     existingEmi: '0',
-    preferredFundingType: 'Government scheme grant / credit guarantee'
+    preferredFundingType: 'Government scheme grant / credit guarantee',
+    workingCapitalAllocations: {
+      rawMaterials: 60000,
+      salaries: 35000,
+      rentUtilities: 15000,
+      marketing: 30000,
+      other: 10000
+    }
   },
   goals: {
     supportNeeded: ['Government schemes', 'Loans / funding', 'Business registration'],
@@ -161,7 +168,19 @@ export function normalizeBusinessRecord(raw) {
       hasExistingLoans: fin.hasExistingLoans || 'No',
       existingEmi: fin.existingEmi || '0',
       preferredFundingType: fin.preferredFundingType || 'Government scheme grant / credit guarantee',
-      ...fin
+      ...fin,
+      workingCapitalAllocations: {
+        rawMaterials: 60000,
+        wages: 35000,
+        rent: 15000,
+        utilities: 5000,
+        transport: 5000,
+        marketing: 30000,
+        ...(fin.workingCapitalAllocations || {}),
+        marketing: (fin.workingCapitalAllocations?.marketing !== undefined && fin.workingCapitalAllocations?.marketing !== null)
+          ? Number(fin.workingCapitalAllocations.marketing)
+          : 30000
+      }
     },
     goals: {
       supportNeeded: goals.supportNeeded || ['Government schemes', 'Loans / funding'],
