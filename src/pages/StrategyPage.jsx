@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import {
   Compass,
@@ -28,6 +28,8 @@ import { generateGroundedAiSummary } from '../services/strategy/strategyAdvisorS
 import MarketAreaMap from '../components/strategy/MarketAreaMap';
 import FeasibilityGauge from '../components/strategy/FeasibilityGauge';
 import SwotGrid from '../components/strategy/SwotGrid';
+import ConsultExpertBanner from '../components/expert/ConsultExpertBanner';
+import { STRATEGY_EXPERT } from '../data/expertConsultants';
 
 const getStrategyStorageKey = (bizId) => `udyamsathi_business_strategy_cache_${bizId || 'default'}`;
 
@@ -306,6 +308,13 @@ export default function StrategyPage() {
             <Sparkles className="w-4 h-4" />
             <span>Generate Business Strategy Now</span>
           </button>
+        </div>
+      )}
+
+      {/* Consult Expert Banner in Empty State */}
+      {!strategy && !isGenerating && (
+        <div className="max-w-4xl mx-auto">
+          <ConsultExpertBanner expert={STRATEGY_EXPERT} />
         </div>
       )}
 
@@ -984,7 +993,10 @@ export default function StrategyPage() {
             </div>
           </div>
 
-          {/* 13. OFFICIAL TRUST & ADVISORY DISCLAIMER */}
+          {/* 13. 💼 CONSULT AN EXPERT (BUSINESS ANALYST / STRATEGY CONSULTANT) */}
+          <ConsultExpertBanner expert={STRATEGY_EXPERT} />
+
+          {/* 14. OFFICIAL TRUST & ADVISORY DISCLAIMER */}
           <div className="p-5 rounded-2xl bg-slate-100 border border-slate-200 flex items-start gap-3 text-xs text-slate-600 leading-relaxed">
             <ShieldCheck className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
             <div>
