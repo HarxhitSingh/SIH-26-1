@@ -2,19 +2,82 @@ import React, { useState, useMemo } from 'react';
 import { Layers, IndianRupee, ShieldCheck, Check, Sparkles, Sliders } from 'lucide-react';
 import { formatRupees, calculateWorkingCapital } from '../../services/financialCalculationService';
 
-export default function WorkingCapitalPlanner({ defaultExpenses = 65000, onWorkingCapitalChange }) {
+export default function WorkingCapitalPlanner({
+  profile = null,
+  defaultExpenses = 65000,
+  onWorkingCapitalChange,
+  onSaveExpenses
+}) {
   // Configurable reserve period (1, 2, or 3 months)
   const [reserveMonths, setReserveMonths] = useState(2);
 
-  // Itemized monthly operating expense state
-  const [expenses, setExpenses] = useState({
-    rawMaterials: 25000,
-    wages: 20000,
-    rent: 10000,
-    utilities: 5000,
-    transport: 3000,
-    marketing: 2000
+  // Initialize from active business profile workingCapitalAllocations if present
+  const bizId = profile?.id || profile?.name || 'default_enterprise';
+  const profileAllocations = profile?.financialProfile?.workingCapitalAllocations;
+
+  // Itemized monthly operating expense state (Single source of truth for marketing budget)
+  const [expenses, setExpenses] = useState(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const cached = localStorage.getItem(`udyamsathi_wc_allocations_${bizId}`);
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          if (parsed && typeof parsed === 'object') {
+            return {
+              rawMaterials: parsed.rawMaterials ?? 60000,
+              wages: parsed.wages ?? 35000,
+              rent: parsed.rent ?? 15000,
+              utilities: parsed.utilities ?? 5000,
+              transport: parsed.transport ?? 5000,
+              marketing: parsed.marketing ?? 30000
+            };
+          }
+        }
+      } catch {}
+    }
+
+    return {
+      rawMaterials: profileAllocations?.rawMaterials ?? 60000,
+      wages: profileAllocations?.wages ?? profileAllocations?.salaries ?? 35000,
+      rent: profileAllocations?.rent ?? profileAllocations?.rentUtilities ?? 15000,
+      utilities: profileAllocations?.utilities ?? 5000,
+      transport: profileAllocations?.transport ?? 5000,
+      marketing: profileAllocations?.marketing ?? 30000
+    };
   });
+
+  // Ensure initial allocations are immediately cached and persisted
+  React.useEffect(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        localStorage.setItem(`udyamsathi_wc_allocations_${bizId}`, JSON.stringify(expenses));
+        window.dispatchEvent(new CustomEvent('udyamsathi_wc_updated', { detail: { bizId, expenses } }));
+      } catch {}
+    }
+    if (onSaveExpenses && (!profileAllocations || profileAllocations.marketing === undefined)) {
+      onSaveExpenses(expenses);
+    }
+  }, [bizId]);
+
+  // Keep state in sync if profile updates from another tab/action
+  React.useEffect(() => {
+    if (profileAllocations) {
+      const synced = {
+        rawMaterials: profileAllocations.rawMaterials ?? 60000,
+        wages: profileAllocations.wages ?? profileAllocations.salaries ?? 35000,
+        rent: profileAllocations.rent ?? profileAllocations.rentUtilities ?? 15000,
+        utilities: profileAllocations.utilities ?? 5000,
+        transport: profileAllocations.transport ?? 5000,
+        marketing: profileAllocations.marketing ?? 30000
+      };
+      setExpenses(synced);
+      if (typeof window !== 'undefined') {
+        try {
+          localStorage.setItem(`udyamsathi_wc_allocations_${bizId}`, JSON.stringify(synced));
+        } catch {}
+      }
+    }
+  }, [profileAllocations, bizId]);
 
   // Calculate total monthly operating cost
   const totalMonthlyCost = useMemo(() => {
@@ -22,8 +85,14 @@ export default function WorkingCapitalPlanner({ defaultExpenses = 65000, onWorki
   }, [expenses]);
 
   const workingCapitalResult = useMemo(() => {
-    return calculateWorkingCapital(totalMonthlyCost, reserveMonths);
-  }, [totalMonthlyCost, reserveMonths]);
+    const res = calculateWorkingCapital(totalMonthlyCost, reserveMonths);
+    return {
+      ...res,
+      expenses,
+      allocations: expenses,
+      marketingAllocation: Number(expenses.marketing) || 0
+    };
+  }, [totalMonthlyCost, reserveMonths, expenses]);
 
   React.useEffect(() => {
     if (onWorkingCapitalChange) {
@@ -32,11 +101,21 @@ export default function WorkingCapitalPlanner({ defaultExpenses = 65000, onWorki
   }, [workingCapitalResult, onWorkingCapitalChange]);
 
   const handleExpenseChange = (key, val) => {
-    setExpenses((prev) => ({ ...prev, [key]: Math.max(0, Number(val)) }));
+    const updated = { ...expenses, [key]: Math.max(0, Number(val)) };
+    setExpenses(updated);
+    if (typeof window !== 'undefined') {
+      try {
+        localStorage.setItem(`udyamsathi_wc_allocations_${bizId}`, JSON.stringify(updated));
+        window.dispatchEvent(new CustomEvent('udyamsathi_wc_updated', { detail: { bizId, expenses: updated } }));
+      } catch {}
+    }
+    if (onSaveExpenses) {
+      onSaveExpenses(updated);
+    }
   };
 
   return (
-    <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200/90 shadow-soft-sm space-y-6">
+    <div id="working-capital" className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200/90 shadow-soft-sm space-y-6 scroll-mt-24">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-4">
         <div>
           <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-amber-50 text-amber-800 text-xs font-bold mb-1">

@@ -6,6 +6,7 @@ import {
   Landmark,
   Coins,
   Compass,
+  Megaphone,
   MapPin,
   Users2,
   Bot,
@@ -71,6 +72,7 @@ export default function Sidebar({ onCloseMobile }) {
         { name: t('nav.schemes', 'Government Schemes'), path: '/schemes', icon: Landmark },
         { name: t('nav.funding', 'Funding'), path: '/funding', icon: Coins },
         { name: t('nav.strategy', 'Business Strategy'), path: '/strategy', icon: Compass },
+        { name: t('nav.marketing', 'Marketing Hub'), path: '/marketing', icon: Megaphone, isAi: true },
         { name: t('nav.roadmap', 'Roadmap'), path: '/roadmap', icon: MapPin },
         { name: t('nav.professionals', 'Professionals'), path: '/professionals', icon: Users2 },
         { name: t('nav.advisor', 'AI Business Advisor'), path: '/advisor', icon: Bot, isAi: true }

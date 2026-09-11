@@ -201,8 +201,17 @@ export default function FundingPage() {
 
       {/* SECTION 7: Working Capital Planner (Section 23) */}
       <WorkingCapitalPlanner
+        profile={profile}
         defaultExpenses={parseRupeeAmount(financials.monthlyOperatingExpenses || financials.expectedMonthlyOperatingCost || 65000)}
         onWorkingCapitalChange={(wc) => setWorkingCapitalState(wc)}
+        onSaveExpenses={async (newAllocations) => {
+          if (updateProfileData) {
+            await updateProfileData('financialProfile', {
+              ...financials,
+              workingCapitalAllocations: newAllocations
+            });
+          }
+        }}
       />
 
       {/* SECTION 8: 🧠 Ask About Your Funding Plan (Section 28, 29, 30) */}
