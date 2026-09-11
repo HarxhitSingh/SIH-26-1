@@ -56,13 +56,13 @@ export default function StrategyPage() {
       localStorage.removeItem('udyamsathi_business_strategy_cache');
     } catch {}
 
-    if (!profile?.id) {
+    if (!profile) {
       setStrategy(null);
       setAiSummary(null);
       return;
     }
 
-    const key = getStrategyStorageKey(profile.id);
+    const key = getStrategyStorageKey(profile.id || profile.business?.name || profile.name || 'default');
     try {
       const cached = localStorage.getItem(key);
       if (cached) {
@@ -77,7 +77,7 @@ export default function StrategyPage() {
       setStrategy(null);
       setAiSummary(null);
     }
-  }, [profile?.id]);
+  }, [profile?.id, profile?.name, profile?.business?.name]);
 
   const [isGenerating, setIsGenerating] = useState(false);
   const [activeStepIndex, setActiveStepIndex] = useState(0);
@@ -129,7 +129,7 @@ export default function StrategyPage() {
       setActiveStepIndex(LOADING_STEPS.length - 1);
 
       // Cache locally for offline availability scoped to this business
-      localStorage.setItem(getStrategyStorageKey(profile?.id), JSON.stringify(generated));
+      localStorage.setItem(getStrategyStorageKey(profile?.id || profile?.business?.name || profile?.name || 'default'), JSON.stringify(generated));
 
       setStrategy(generated);
       setAiSummary(aiResult);
@@ -162,7 +162,7 @@ export default function StrategyPage() {
     );
   }
 
-  const businessName = profile?.business?.name || 'My Enterprise';
+  const businessName = profile?.business?.name || profile?.name || 'My Enterprise';
   const locationText = `${profile?.personalInfo?.district || 'Your District'}, ${profile?.personalInfo?.state || 'India'}`;
 
   return (
