@@ -15,6 +15,7 @@ import {
   Layers
 } from 'lucide-react';
 import { formatRupees } from '../../services/financialCalculationService';
+import { classifyBusinessDomain, BUSINESS_DOMAINS } from '../../services/strategy/businessDomainClassifier';
 
 export default function MarketingCampaignsView({
   profile,
@@ -70,19 +71,56 @@ export default function MarketingCampaignsView({
 
   // AI Autofill helper
   const handleAiAutoFill = () => {
-    const bizName = profile?.business?.name || profile?.name || 'Our Enterprise';
-    const product = profile?.business?.productService || 'Products';
+    const business = profile?.business || profile || {};
+    const personal = profile?.personalInfo || {};
+    const bizName = business.name || profile?.name || 'Our Enterprise';
+    const product = business.productService || business.description || 'Specialty Offerings';
+    const district = personal.district || (business.location?.includes(',') ? business.location.split(',')[0].trim() : 'your neighborhood');
+    const domainInfo = classifyBusinessDomain(business, personal);
+    const key = domainInfo.domainKey;
     const maxAffordable = Math.min(budgetStatus.remainingBudget, Math.round(budgetStatus.totalMonthlyBudget * 0.35)) || 5000;
 
-    setName(`Festive & Local Launch for ${bizName}`);
-    setObjective('Acquire Customers');
-    setTargetAudience('Local households and retail consumers within 5 km radius');
-    setDurationDays(21);
-    setBudget(String(maxAffordable));
-    setSelectedChannels(['WhatsApp Direct', 'Instagram Ads', 'Google Business Profile']);
-    setOffer('Flat 10% Off or Free Sample Box on First Order');
-    setKeyMessage(`Experience farm-fresh authentic ${product} delivered same-day in your area.`);
-    setCta('WhatsApp Us to Order');
+    if (key === BUSINESS_DOMAINS.HOSPITALITY_CAFE_RESTAURANT) {
+      setName(`Introductory Dining & Specialty Brew Launch for ${bizName}`);
+      setObjective('Acquire Customers');
+      setTargetAudience(`Local foodies, young professionals, and coffee lovers in ${district}`);
+      setDurationDays(21);
+      setBudget(String(maxAffordable));
+      setSelectedChannels(['Instagram Ads', 'Google Business Profile', 'WhatsApp Direct']);
+      setOffer('Free Handcrafted Pastry or Snack with First Specialty Brew');
+      setKeyMessage(`Experience specialty roasted coffees, oven-warm treats, and cozy ambiance at ${bizName}.`);
+      setCta('WhatsApp Us for Directions / Menu');
+    } else if (key === BUSINESS_DOMAINS.AGRI_EQUIPMENT_MACHINERY) {
+      setName(`Village On-Farm Trial & Demo Campaign`);
+      setObjective('Acquire Customers');
+      setTargetAudience(`Smallholder farmers, vegetable growers & FPOs in ${district}`);
+      setDurationDays(30);
+      setBudget(String(maxAffordable));
+      setSelectedChannels(['WhatsApp Direct', 'Mandi Trade Kiosk', 'Google Business Profile']);
+      setOffer('Free 1-Acre Field Trial Demo + Free Spare Blade Kit');
+      setKeyMessage(`Cut manual labor by 60% with field-tested ${product} from ${bizName}. Instant spare parts and local warranty.`);
+      setCta('Book Free Village Demo on WhatsApp');
+    } else if (key === BUSINESS_DOMAINS.TECH_ELECTRONICS_REPAIR || key === BUSINESS_DOMAINS.HEALTH_MEDICAL_WELLNESS || key === BUSINESS_DOMAINS.EDUCATION_COACHING_ACADEMY) {
+      setName(`High-Intent Local Discovery Campaign`);
+      setObjective('Acquire Customers');
+      setTargetAudience(`Local residents and clients seeking trusted services in ${district}`);
+      setDurationDays(25);
+      setBudget(String(maxAffordable));
+      setSelectedChannels(['Google Business Profile', 'WhatsApp Direct', 'Counter QR Display']);
+      setOffer('Free Initial Diagnostic Check / Consultation');
+      setKeyMessage(`Transparent, dependable ${product} right in your neighborhood by ${bizName}. Zero hidden charges.`);
+      setCta('Book Consultation on WhatsApp');
+    } else {
+      setName(`Local Customer Acquisition Launch for ${bizName}`);
+      setObjective('Acquire Customers');
+      setTargetAudience(`Neighborhood residents & retail consumers across ${district}`);
+      setDurationDays(21);
+      setBudget(String(maxAffordable));
+      setSelectedChannels(['WhatsApp Direct', 'Instagram Ads', 'Google Business Profile']);
+      setOffer('10% Introductory Discount or Free Welcome Gift on First Order');
+      setKeyMessage(`Verified quality, personalized service, and dedicated local support at ${bizName}.`);
+      setCta('Order on WhatsApp / Visit Us');
+    }
     setErrorMsg('');
   };
 

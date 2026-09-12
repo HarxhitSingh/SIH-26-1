@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { sendAdvisorMessage } from '../../services/aiAdvisorService';
 import { formatRupees } from '../../services/financialCalculationService';
+import { classifyBusinessDomain, BUSINESS_DOMAINS } from '../../services/strategy/businessDomainClassifier';
 
 export default function MarketingAdvisorChat({
   profile,
@@ -24,15 +25,47 @@ export default function MarketingAdvisorChat({
   const messagesEndRef = useRef(null);
 
   const business = profile?.business || profile || {};
+  const personal = profile?.personalInfo || {};
   const bizName = business.name || 'Your Enterprise';
-  const location = profile?.personalInfo?.district ? `${profile.personalInfo.district}, ${profile.personalInfo.state}` : 'your area';
+  const district = personal.district || (business.location?.includes(',') ? business.location.split(',')[0].trim() : 'your area');
+  const location = personal.district ? `${personal.district}, ${personal.state}` : (business.location || 'your area');
+  const product = business.productService || business.description || 'specialty offerings';
 
-  const defaultPrompts = [
-    'I only have ₹5,000 left this month. What should I do?',
-    'My Instagram campaign isn’t converting into paying customers.',
-    'What low-cost channel should I advertise on this week?',
-    'How do I create a high-converting local festive campaign?'
-  ];
+  const domainInfo = strategy?.domainInfo || classifyBusinessDomain(business, personal);
+  const key = domainInfo.domainKey;
+
+  const defaultPrompts = useMemo(() => {
+    if (key === BUSINESS_DOMAINS.HOSPITALITY_CAFE_RESTAURANT) {
+      return [
+        'How do I increase weekday afternoon footfall at the cafe?',
+        'What introductory offer works best for first-time cafe visitors?',
+        'How do I get more 5-star Google Maps reviews from diners?',
+        'What is the most cost-effective way to announce weekend specials?'
+      ];
+    }
+    if (key === BUSINESS_DOMAINS.AGRI_EQUIPMENT_MACHINERY) {
+      return [
+        'How do I organize a high-converting on-farm demonstration?',
+        'What WhatsApp message should I send to local farmer groups?',
+        'How can I partner with local FPOs and equipment dealers?',
+        'What should my pre-season machinery booking campaign look like?'
+      ];
+    }
+    if (key === BUSINESS_DOMAINS.TECH_ELECTRONICS_REPAIR || key === BUSINESS_DOMAINS.HEALTH_MEDICAL_WELLNESS || key === BUSINESS_DOMAINS.EDUCATION_COACHING_ACADEMY) {
+      return [
+        'How do I rank higher on Google Maps for local service searches?',
+        'What low-cost channel brings in the fastest service inquiries?',
+        'How do I convert one-time clients into recurring retainers?',
+        'What introductory offer brings in hesitant new clients?'
+      ];
+    }
+    return [
+      `I have ${formatRupees(budgetStatus.remainingBudget)} left this month. What is my highest-ROI move?`,
+      'My online campaign isn’t converting into paying customers.',
+      'What low-cost channel should I advertise on this week?',
+      'How do I create a high-converting referral reward for my trade?'
+    ];
+  }, [key, budgetStatus.remainingBudget]);
 
   // Initialize welcome message
   useEffect(() => {
@@ -41,14 +74,14 @@ export default function MarketingAdvisorChat({
         {
           id: 'msg_welcome',
           sender: 'ai',
-          text: `Namaste! I am your **AI Marketing Advisor** for **${bizName}**.\n\n` +
-            `I have direct visibility into your **${formatRupees(budgetStatus.totalMonthlyBudget)}** monthly marketing allocation from Working Capital, your **${campaigns.length} active campaigns**, and your local target market in **${location}**.\n\n` +
-            `Ask me anything about improving customer acquisition, troubleshooting ad spend, or writing high-converting local offers!`,
+          text: `Namaste! I am your **AI Marketing Advisor** for **${bizName}** (${domainInfo.domainTitle}).\n\n` +
+            `I have direct visibility into your **${formatRupees(budgetStatus.totalMonthlyBudget)}** monthly marketing allocation from Working Capital, your **${campaigns.length} active campaigns**, and your customer base in **${location}**.\n\n` +
+            `Ask me anything about improving customer footfall, boosting inquiry conversions, or designing high-ROI local promotions!`,
           timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
         }
       ]);
     }
-  }, [bizName, budgetStatus.totalMonthlyBudget, campaigns.length, location]);
+  }, [bizName, domainInfo.domainTitle, budgetStatus.totalMonthlyBudget, campaigns.length, location]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -71,12 +104,17 @@ export default function MarketingAdvisorChat({
 
     try {
       const marketingContext = `The user is asking: "${text}".
-Business: ${bizName} (${business.sector || 'General'})
+Business: ${bizName}
+Sector: ${business.sector || 'General'}
+Domain: ${domainInfo.domainTitle} (${domainInfo.tradeCategory})
+Products/Services: ${product}
+Description: ${business.description || 'Specialized enterprise'}
+Target Customers: ${business.targetCustomers || domainInfo.primaryTargetAudience}
 Location: ${location}
 Monthly Marketing Budget from Working Capital: ${formatRupees(budgetStatus.totalMonthlyBudget)}
 Remaining uncommitted budget: ${formatRupees(budgetStatus.remainingBudget)}
-Active campaigns: ${campaigns.map((c) => `${c.name} (Budget: ${c.budget})`).join(', ') || 'None'}
-Provide sharp, realistic, budget-aware marketing advice. Never recommend spending more than their remaining budget.`;
+Active campaigns: ${campaigns.map((c) => `${c.name} (Budget: ${formatRupees(c.budget)})`).join(', ') || 'None'}
+Provide sharp, realistic, budget-aware marketing advice grounded strictly in their actual trade and customer profile. Never recommend spending more than their remaining budget.`;
 
       const aiResponse = await sendAdvisorMessage({
         message: marketingContext,
@@ -84,12 +122,18 @@ Provide sharp, realistic, budget-aware marketing advice. Never recommend spendin
         profile: profile || {}
       });
 
+      const defaultFallback = key === BUSINESS_DOMAINS.HOSPITALITY_CAFE_RESTAURANT
+        ? `Based on your remaining marketing budget of ${formatRupees(budgetStatus.remainingBudget)} for ${bizName}, focus on direct high-intent discovery. Placing table QR cards to build your WhatsApp VIP club and updating Google Maps with high-quality photos of your hero drinks and dishes will deliver immediate guest footfall with near-zero media spend.`
+        : key === BUSINESS_DOMAINS.AGRI_EQUIPMENT_MACHINERY
+        ? `For ${bizName} with ${formatRupees(budgetStatus.remainingBudget)} available marketing capital, prioritize hands-on village demonstrations. Sponsoring a 1-acre trial on a progressive farmer's field and circulating short WhatsApp operation clips creates immediate word-of-mouth that overcomes purchase hesitation.`
+        : `Based on your available marketing budget of ${formatRupees(budgetStatus.remainingBudget)} for ${bizName}, prioritize your existing customers first. A direct WhatsApp follow-up asking for Google Maps reviews and offering a 10% privilege re-engagement incentive delivers the highest return per rupee spent.`;
+
       setMessages((prev) => [
         ...prev,
         {
           id: `ai_${Date.now()}`,
           sender: 'ai',
-          text: aiResponse?.reply || `Based on your remaining marketing budget of ${formatRupees(budgetStatus.remainingBudget)} for ${bizName}, focus on direct high-intent channels. Using WhatsApp broadcasts with an introductory free tasting sample or bundle offer will yield the lowest CAC without bidding in expensive online auctions.`,
+          text: aiResponse?.reply || defaultFallback,
           timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
         }
       ]);
@@ -99,7 +143,7 @@ Provide sharp, realistic, budget-aware marketing advice. Never recommend spendin
         {
           id: `ai_${Date.now()}`,
           sender: 'ai',
-          text: `For ${bizName} with ${formatRupees(budgetStatus.remainingBudget)} available marketing capital, prioritize your existing buyers first. A direct WhatsApp follow-up asking for Google reviews and offering a 10% re-order incentive delivers the highest return per rupee spent.`,
+          text: `For ${bizName} with ${formatRupees(budgetStatus.remainingBudget)} available marketing capital, focus on local high-intent discovery and existing customer referrals. Prompting satisfied buyers for 5-star Google reviews and sharing an introductory referral incentive delivers the highest conversion without expensive ad auctions.`,
           timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
         }
       ]);

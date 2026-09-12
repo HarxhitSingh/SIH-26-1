@@ -75,14 +75,14 @@ export default function MarketingHubPage() {
 
   // Scoped multi-company marketing store
   const [marketingStore, setMarketingStore] = useState(() => {
-    return getMarketingStore(companyId, monthlyMarketingBudget);
+    return getMarketingStore(companyId, monthlyMarketingBudget, currentEnterprise);
   });
 
   // Reload store when active company changes
   useEffect(() => {
-    const store = getMarketingStore(companyId, monthlyMarketingBudget);
+    const store = getMarketingStore(companyId, monthlyMarketingBudget, currentEnterprise);
     setMarketingStore(store);
-  }, [companyId, monthlyMarketingBudget]);
+  }, [companyId, monthlyMarketingBudget, currentEnterprise]);
 
   const [activeTab, setActiveTab] = useState('overview');
 
