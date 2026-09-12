@@ -19,6 +19,12 @@ export const BUSINESS_DOMAINS = {
   AGRI_INPUTS: 'AGRI_INPUTS',
   AGRI_FOOD_PROCESSING: 'AGRI_FOOD_PROCESSING',
   DAIRY_ANIMAL_HUSBANDRY: 'DAIRY_ANIMAL_HUSBANDRY',
+  HOSPITALITY_CAFE_RESTAURANT: 'HOSPITALITY_CAFE_RESTAURANT',
+  HEALTH_MEDICAL_WELLNESS: 'HEALTH_MEDICAL_WELLNESS',
+  EDUCATION_COACHING_ACADEMY: 'EDUCATION_COACHING_ACADEMY',
+  BEAUTY_SALON_PERSONAL_CARE: 'BEAUTY_SALON_PERSONAL_CARE',
+  PROFESSIONAL_CREATIVE_SERVICES: 'PROFESSIONAL_CREATIVE_SERVICES',
+  ARTISAN_HANDICRAFT_DECOR: 'ARTISAN_HANDICRAFT_DECOR',
   MANUFACTURING_FABRICATION: 'MANUFACTURING_FABRICATION',
   TEXTILE_APPAREL_FASHION: 'TEXTILE_APPAREL_FASHION',
   TECH_ELECTRONICS_REPAIR: 'TECH_ELECTRONICS_REPAIR',
@@ -38,7 +44,31 @@ export function classifyBusinessDomain(business = {}, personal = {}) {
 
   const combinedText = `${name} ${desc} ${product} ${target} ${sector} ${type}`.toLowerCase();
 
-  // 1. AGRICULTURAL EQUIPMENT, FARM MACHINERY & AGRI-TOOLS
+  // 1. HOSPITALITY, CAFE, BAKERY, RESTAURANT & FOOD SERVICE
+  const cafeRestaurantKeywords = [
+    'cafe', 'coffee', 'bistro', 'restaurant', 'bakery', 'cloud kitchen', 'food truck',
+    'catering', 'diner', 'dhaba', 'eatery', 'tea shop', 'chai', 'mithai', 'sweet shop',
+    'pizzeria', 'burger', 'snacks', 'fast food', 'barista', 'patisserie', 'confectionery',
+    'takeaway', 'dine-in', 'hospitality', 'beverage', 'juice bar', 'shakes', 'waffle'
+  ];
+  if (cafeRestaurantKeywords.some(k => combinedText.includes(k))) {
+    return {
+      domainKey: BUSINESS_DOMAINS.HOSPITALITY_CAFE_RESTAURANT,
+      domainTitle: 'Cafe, Restaurant & Food Service',
+      tradeCategory: 'Food & Beverage Hospitality',
+      primaryTargetAudience: 'Local Residents, Office Workers, Students, Families & Dine-in Guests',
+      unitTypeLabel: 'Order / Table Bill',
+      isMachinery: false,
+      isFoodOrDairy: false,
+      isFoodServiceOrCafe: true,
+      isService: true,
+      isRetail: true,
+      isB2B: false,
+      summaryExplanation: 'Food service and hospitality enterprise serving freshly prepared beverages, artisanal baked goods, meals, or dine-in/takeaway hospitality experiences.'
+    };
+  }
+
+  // 2. AGRICULTURAL EQUIPMENT, FARM MACHINERY & AGRI-TOOLS
   const equipKeywords = [
     'equipment', 'equipments', 'machinery', 'machine', 'machines', 'implement', 'implements',
     'tool', 'tools', 'tractor', 'tiller', 'power tiller', 'weeder', 'sprayer', 'harvester',
@@ -58,18 +88,21 @@ export function classifyBusinessDomain(business = {}, personal = {}) {
       unitTypeLabel: 'Equipment / Implement Unit',
       isMachinery: true,
       isFoodOrDairy: false,
+      isFoodServiceOrCafe: false,
+      isService: false,
+      isRetail: false,
+      isB2B: true,
       summaryExplanation: 'Enterprise designing, fabricating, assembling, or distributing mechanization tools, implements, and machinery to increase agricultural productivity.'
     };
   }
 
-  // 2. DAIRY & ANIMAL HUSBANDRY (Strict check: must explicitly mention milk, dairy, cattle, cow, buffalo, poultry, goat)
+  // 3. DAIRY & ANIMAL HUSBANDRY (Strict check: must explicitly mention milk, dairy, cattle, cow, buffalo, poultry, goat)
   const dairyKeywords = [
     'dairy', 'milk', 'dudhiya', 'cow', 'buffalo', 'cattle', 'ghee', 'paneer', 'butter', 'curd',
     'poultry', 'broiler', 'layer', 'egg', 'goat farming', 'sheep', 'piggery', 'fishery', 'fish farm',
     'aquaculture', 'animal husbandry', 'livestock'
   ];
   const hasDairyKeyword = dairyKeywords.some(k => combinedText.includes(k));
-  // Ensure it's not dairy equipment
   if (hasDairyKeyword && !hasEquipKeyword) {
     return {
       domainKey: BUSINESS_DOMAINS.DAIRY_ANIMAL_HUSBANDRY,
@@ -79,14 +112,18 @@ export function classifyBusinessDomain(business = {}, personal = {}) {
       unitTypeLabel: 'Liter / Kilogram',
       isMachinery: false,
       isFoodOrDairy: true,
+      isFoodServiceOrCafe: false,
+      isService: false,
+      isRetail: true,
+      isB2B: true,
       summaryExplanation: 'Enterprise engaged in dairy farming, milk collection, chilling, livestock rearing, or poultry/fishery production.'
     };
   }
 
-  // 3. AGRO & FOOD PROCESSING (Value-addition to farm produce)
+  // 4. AGRO & FOOD PROCESSING (Value-addition to raw farm produce)
   const foodProcessingKeywords = [
-    'food processing', 'processing', 'flour mill', 'atta chakki', 'oil mill', 'oil expeller',
-    'spice grinding', 'masala', 'fruit pulp', 'puree', 'pickle', 'bakery', 'jam', 'jelly', 'honey',
+    'food processing', 'flour mill', 'atta chakki', 'oil mill', 'oil expeller',
+    'spice grinding', 'masala', 'fruit pulp', 'puree', 'pickle', 'jam', 'jelly', 'honey',
     'chips', 'dal mill', 'rice mill', 'organic food', 'packaged food', 'cold pressed', 'edible oil'
   ];
   if (foodProcessingKeywords.some(k => combinedText.includes(k))) {
@@ -98,29 +135,126 @@ export function classifyBusinessDomain(business = {}, personal = {}) {
       unitTypeLabel: 'Pack / Kilogram',
       isMachinery: false,
       isFoodOrDairy: true,
+      isFoodServiceOrCafe: false,
+      isService: false,
+      isRetail: true,
+      isB2B: true,
       summaryExplanation: 'Enterprise transforming raw agricultural harvests into packaged, processed food products and culinary ingredients.'
     };
   }
 
-  // 4. AGRI-INPUTS & CROP PRODUCTION
-  const agriCropKeywords = [
-    'crop cultivation', 'vegetable farming', 'horticulture', 'floriculture', 'organic farming',
-    'nursery', 'seedling', 'mushroom farming', 'hydroponics', 'polyhouse', 'greenhouse farming'
+  // 5. HEALTH, MEDICAL & WELLNESS
+  const healthKeywords = [
+    'clinic', 'doctor', 'dental', 'dentist', 'physiotherapy', 'pharmacy', 'medical',
+    'diagnostic', 'pathology', 'ayurveda', 'homeopathy', 'gym', 'fitness', 'yoga', 'wellness'
   ];
-  if (agriCropKeywords.some(k => combinedText.includes(k))) {
+  if (healthKeywords.some(k => combinedText.includes(k))) {
     return {
-      domainKey: BUSINESS_DOMAINS.AGRI_CROP_FARMING,
-      domainTitle: 'Commercial Crop & Horticulture Production',
-      tradeCategory: 'Agricultural Production',
-      primaryTargetAudience: 'Wholesale Mandi Traders, Local Retail Vendors, and Direct Consumers',
-      unitTypeLabel: 'Quintal / Kilogram',
+      domainKey: BUSINESS_DOMAINS.HEALTH_MEDICAL_WELLNESS,
+      domainTitle: 'Healthcare, Clinic & Wellness',
+      tradeCategory: 'Healthcare & Wellness Services',
+      primaryTargetAudience: 'Patients, Families, Fitness Enthusiasts & Local Residents',
+      unitTypeLabel: 'Consultation / Session / Package',
       isMachinery: false,
       isFoodOrDairy: false,
-      summaryExplanation: 'Direct cultivation of cash crops, vegetables, flowers, mushrooms, or fruit plantations.'
+      isFoodServiceOrCafe: false,
+      isService: true,
+      isRetail: false,
+      isB2B: false,
+      summaryExplanation: 'Healthcare, medical clinic, physical therapy, diagnostic care, or wellness fitness enterprise serving patient and community health.'
     };
   }
 
-  // 5. TEXTILE, GARMENT & TAILORING
+  // 6. EDUCATION, COACHING & SKILL TRAINING
+  const eduKeywords = [
+    'coaching', 'tuition', 'institute', 'academy', 'classes', 'training center',
+    'school', 'playschool', 'daycare', 'dance academy', 'music school', 'computer training'
+  ];
+  if (eduKeywords.some(k => combinedText.includes(k))) {
+    return {
+      domainKey: BUSINESS_DOMAINS.EDUCATION_COACHING_ACADEMY,
+      domainTitle: 'Education, Coaching & Skill Academy',
+      tradeCategory: 'Education & Training Services',
+      primaryTargetAudience: 'Students, Aspirants, Working Professionals & Parents',
+      unitTypeLabel: 'Student Enrollment / Course Fee',
+      isMachinery: false,
+      isFoodOrDairy: false,
+      isFoodServiceOrCafe: false,
+      isService: true,
+      isRetail: false,
+      isB2B: false,
+      summaryExplanation: 'Educational tutoring, academic coaching, vocational skill development, or creative training institution.'
+    };
+  }
+
+  // 7. BEAUTY, SALON & PERSONAL CARE
+  const beautyKeywords = [
+    'salon', 'beauty parlour', 'parlor', 'spa', 'barber', 'haircut', 'makeup',
+    'skincare', 'cosmetics', 'nail art', 'grooming'
+  ];
+  if (beautyKeywords.some(k => combinedText.includes(k))) {
+    return {
+      domainKey: BUSINESS_DOMAINS.BEAUTY_SALON_PERSONAL_CARE,
+      domainTitle: 'Beauty Salon, Spa & Personal Care',
+      tradeCategory: 'Personal Care & Grooming Services',
+      primaryTargetAudience: 'Local Residents, Brides/Grooms, Working Professionals & Students',
+      unitTypeLabel: 'Service Appointment / Package',
+      isMachinery: false,
+      isFoodOrDairy: false,
+      isFoodServiceOrCafe: false,
+      isService: true,
+      isRetail: false,
+      isB2B: false,
+      summaryExplanation: 'Personal styling, hairdressing, aesthetic skincare, beauty therapy, and bridal makeover services.'
+    };
+  }
+
+  // 8. PROFESSIONAL, CREATIVE & BUSINESS SERVICES
+  const profKeywords = [
+    'consulting', 'accounting', 'chartered accountant', 'legal', 'lawyer', 'taxation',
+    'photography', 'photo studio', 'videography', 'event management', 'graphic design',
+    'advertising agency', 'printing press', 'digital marketing agency', 'architect'
+  ];
+  if (profKeywords.some(k => combinedText.includes(k))) {
+    return {
+      domainKey: BUSINESS_DOMAINS.PROFESSIONAL_CREATIVE_SERVICES,
+      domainTitle: 'Professional, Creative & Business Services',
+      tradeCategory: 'Professional & Creative Services',
+      primaryTargetAudience: 'Local Businesses, Event Hosts, MSME Founders & Individual Clients',
+      unitTypeLabel: 'Project / Client Retainer',
+      isMachinery: false,
+      isFoodOrDairy: false,
+      isFoodServiceOrCafe: false,
+      isService: true,
+      isRetail: false,
+      isB2B: true,
+      summaryExplanation: 'Specialized professional advisory, accounting, media creation, event execution, or creative design consultancy.'
+    };
+  }
+
+  // 9. ARTISAN, HANDICRAFT & HOME DECOR
+  const artisanKeywords = [
+    'handicraft', 'handicrafts', 'pottery', 'clay', 'artisan', 'handmade', 'candle',
+    'bamboo', 'jute', 'leather craft', 'home decor', 'wooden craft', 'sculpture'
+  ];
+  if (artisanKeywords.some(k => combinedText.includes(k))) {
+    return {
+      domainKey: BUSINESS_DOMAINS.ARTISAN_HANDICRAFT_DECOR,
+      domainTitle: 'Handicrafts, Artisan & Creative Goods',
+      tradeCategory: 'Artisan & Cultural Manufacturing',
+      primaryTargetAudience: 'Direct Consumers, Gift Buyers, Tourists, Boutique Stores & Corporate Gifting',
+      unitTypeLabel: 'Crafted Piece / Set',
+      isMachinery: false,
+      isFoodOrDairy: false,
+      isFoodServiceOrCafe: false,
+      isService: false,
+      isRetail: true,
+      isB2B: true,
+      summaryExplanation: 'Indigenous craftwork, handmade lifestyle artifacts, pottery, and artistic utility goods celebrating traditional craftsmanship.'
+    };
+  }
+
+  // 10. TEXTILE, GARMENT & TAILORING
   const textileKeywords = [
     'tailor', 'tailoring', 'garment', 'garments', 'boutique', 'cloth', 'apparel', 'textile',
     'stitching', 'dress', 'kurta', 'blouse', 'suit', 'embroidery', 'handloom', 'uniform', 'fashion'
@@ -134,11 +268,15 @@ export function classifyBusinessDomain(business = {}, personal = {}) {
       unitTypeLabel: 'Garment / Stitching Job',
       isMachinery: false,
       isFoodOrDairy: false,
+      isFoodServiceOrCafe: false,
+      isService: false,
+      isRetail: true,
+      isB2B: false,
       summaryExplanation: 'Custom tailoring, apparel manufacturing, fashion design, or garment alterations.'
     };
   }
 
-  // 6. TECH, ELECTRONICS & SMARTPHONE REPAIR
+  // 11. TECH, ELECTRONICS & SMARTPHONE REPAIR
   const techKeywords = [
     'mobile repair', 'phone repair', 'smartphone', 'electronic', 'electronics', 'computer',
     'laptop', 'cctv', 'solar installation', 'solar', 'digital service', 'software', 'it service'
@@ -152,11 +290,15 @@ export function classifyBusinessDomain(business = {}, personal = {}) {
       unitTypeLabel: 'Service Repair Job / Device',
       isMachinery: false,
       isFoodOrDairy: false,
+      isFoodServiceOrCafe: false,
+      isService: true,
+      isRetail: false,
+      isB2B: false,
       summaryExplanation: 'Hardware diagnostics, screen replacements, gadget maintenance, and technical installations.'
     };
   }
 
-  // 7. MANUFACTURING, FABRICATION & WORKSHOP
+  // 12. MANUFACTURING, FABRICATION & WORKSHOP
   const mfgKeywords = [
     'manufacturing', 'fabrication', 'workshop', 'welding', 'carpentry', 'furniture',
     'hardware', 'metal', 'steel', 'plastic', 'packaging material', 'building material', 'bricks'
@@ -170,11 +312,15 @@ export function classifyBusinessDomain(business = {}, personal = {}) {
       unitTypeLabel: 'Manufactured Unit / Batch',
       isMachinery: true,
       isFoodOrDairy: false,
+      isFoodServiceOrCafe: false,
+      isService: false,
+      isRetail: false,
+      isB2B: true,
       summaryExplanation: 'Fabrication of physical goods, metal structures, parts, or industrial consumables.'
     };
   }
 
-  // 8. RETAIL, GROCERY & KIRANA
+  // 13. RETAIL, GROCERY & KIRANA
   const retailKeywords = [
     'grocery', 'kirana', 'supermarket', 'retail shop', 'store', 'trading', 'wholesaler',
     'distributor', 'provisions', 'fmcg retail', 'merchant'
@@ -188,11 +334,15 @@ export function classifyBusinessDomain(business = {}, personal = {}) {
       unitTypeLabel: 'Basket / Transaction Order',
       isMachinery: false,
       isFoodOrDairy: false,
+      isFoodServiceOrCafe: false,
+      isService: false,
+      isRetail: true,
+      isB2B: false,
       summaryExplanation: 'Retail distribution and consumer goods merchandising.'
     };
   }
 
-  // 9. LOGISTICS & TRANSPORT
+  // 14. LOGISTICS & TRANSPORT
   const transportKeywords = ['transport', 'logistics', 'delivery', 'cargo', 'truck', 'auto', 'warehouse'];
   if (transportKeywords.some(k => combinedText.includes(k))) {
     return {
@@ -203,19 +353,49 @@ export function classifyBusinessDomain(business = {}, personal = {}) {
       unitTypeLabel: 'Trip / Consignment',
       isMachinery: false,
       isFoodOrDairy: false,
+      isFoodServiceOrCafe: false,
+      isService: true,
+      isRetail: false,
+      isB2B: true,
       summaryExplanation: 'Local and inter-district goods transport, last-mile delivery, or freight logistics.'
     };
   }
 
-  // 10. DEFAULT / GENERAL ENTERPRISE (Derive title gracefully)
+  // 15. AGRI-INPUTS & CROP PRODUCTION
+  const agriCropKeywords = [
+    'crop cultivation', 'vegetable farming', 'horticulture', 'floriculture', 'organic farming',
+    'nursery', 'seedling', 'mushroom farming', 'hydroponics', 'polyhouse', 'greenhouse farming'
+  ];
+  if (agriCropKeywords.some(k => combinedText.includes(k))) {
+    return {
+      domainKey: BUSINESS_DOMAINS.AGRI_CROP_FARMING,
+      domainTitle: 'Commercial Crop & Horticulture Production',
+      tradeCategory: 'Agricultural Production',
+      primaryTargetAudience: 'Wholesale Mandi Traders, Local Retail Vendors, and Direct Consumers',
+      unitTypeLabel: 'Quintal / Kilogram',
+      isMachinery: false,
+      isFoodOrDairy: false,
+      isFoodServiceOrCafe: false,
+      isService: false,
+      isRetail: true,
+      isB2B: true,
+      summaryExplanation: 'Direct cultivation of cash crops, vegetables, flowers, mushrooms, or fruit plantations.'
+    };
+  }
+
+  // 16. DEFAULT / GENERAL ENTERPRISE (Derive title gracefully)
   return {
     domainKey: BUSINESS_DOMAINS.GENERAL_ENTERPRISE,
     domainTitle: business.sector ? `${business.sector} Enterprise` : 'Local Micro-Enterprise',
     tradeCategory: business.sector || 'General Commerce',
     primaryTargetAudience: business.targetCustomers || 'Local Consumers & Regional Retailers',
-    unitTypeLabel: 'Standard Unit',
+    unitTypeLabel: 'Standard Unit / Service',
     isMachinery: false,
     isFoodOrDairy: false,
+    isFoodServiceOrCafe: false,
+    isService: sector.includes('service'),
+    isRetail: sector.includes('retail'),
+    isB2B: sector.includes('b2b') || sector.includes('wholesale'),
     summaryExplanation: business.description || 'Specialized commercial goods or professional services tailored to regional demand.'
   };
 }
